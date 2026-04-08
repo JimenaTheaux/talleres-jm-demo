@@ -3,74 +3,94 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import type { Perfil } from '@/types/app.types'
 
+/**
+ * fetchPerfil con AbortController propio de 6 segundos.
+ * Si Supabase tarda más (proyecto pausado, red lenta), lanza error
+ * en lugar de colgar para siempre.
+ */
 async function fetchPerfil(userId: string): Promise<Perfil | null> {
-  const { data, error } = await supabase
-    .from('perfiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  if (error) throw error   // propagate — el catch lo maneja
-  return data as Perfil | null
+  const controller = new AbortController()
+  const abort = setTimeout(() => {
+    console.warn('[fetchPerfil] abortando — sin respuesta en 6s')
+    controller.abort()
+  }, 6000)
+
+  try {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', userId)
+      .abortSignal(controller.signal)
+      .single()
+
+    clearTimeout(abort)
+    if (error) throw error
+    return data as Perfil | null
+  } catch (err) {
+    clearTimeout(abort)
+    throw err
+  }
 }
 
 export function useAuth() {
   const { loading, setAuth, setLoading, clear } = useAuthStore()
 
   useEffect(() => {
-    // Seguridad absoluta: si en 8s no resolvió, salimos del loading
-    const timeout = setTimeout(() => {
+    // Timeout de seguridad total — si en 10s no resolvió, forzar salida
+    const globalTimeout = setTimeout(() => {
       if (useAuthStore.getState().loading) {
-        console.warn('[useAuth] timeout — forzando loading:false')
+        console.error('[useAuth] timeout global — Supabase no respondió')
         setLoading(false)
       }
-    }, 8000)
+    }, 10000)
 
-    // ⚠️  NO usamos getSession() porque puede devolver tokens vencidos
-    // del localStorage sin validarlos con el servidor.
-    // onAuthStateChange siempre valida/refresca el token ANTES de disparar.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        // Sin sesión → limpiar y mostrar login
-        if (!session?.user) {
-          clearTimeout(timeout)
-          clear()
-          return
-        }
+      (event, session) => {
+        console.log('[useAuth] onAuthStateChange', event, session?.user?.id ?? 'no-session')
 
-        const currentState = useAuthStore.getState()
+        // ⚠️  CRÍTICO: diferir el trabajo con setTimeout(0).
+        // onAuthStateChange mantiene un lock interno de Supabase.
+        // Si hacemos una query de Supabase DENTRO del callback sin diferir,
+        // y esa query intenta refrescar el token, intenta adquirir el mismo
+        // lock → deadlock → la query cuelga indefinidamente.
+        setTimeout(async () => {
+          if (!session?.user) {
+            clearTimeout(globalTimeout)
+            clear()
+            return
+          }
 
-        // Si ya tenemos al mismo usuario y perfil cargados no re-fetchar
-        // Cubre: TOKEN_REFRESHED, SIGNED_IN después de que LoginPage ya seteo el estado
-        if (
-          currentState.user?.id === session.user.id &&
-          currentState.perfil !== null
-        ) {
-          clearTimeout(timeout)
-          // Aseguramos que loading quede en false si quedó colgado
-          if (currentState.loading) setLoading(false)
-          return
-        }
+          const state = useAuthStore.getState()
 
-        // INITIAL_SESSION, SIGNED_IN con usuario nuevo → cargar perfil
-        try {
-          const p = await fetchPerfil(session.user.id)
-          clearTimeout(timeout)
-          if (p) {
-            setAuth(session.user, p)
-          } else {
-            // Autenticado pero sin perfil en la DB → cerrar sesión
-            await supabase.auth.signOut()
+          // Mismo usuario y perfil ya cargados → solo asegurar loading:false
+          if (state.user?.id === session.user.id && state.perfil) {
+            clearTimeout(globalTimeout)
+            if (state.loading) setLoading(false)
+            return
+          }
+
+          console.log('[useAuth] fetchPerfil para', session.user.id)
+          try {
+            const p = await fetchPerfil(session.user.id)
+            console.log('[useAuth] fetchPerfil ok', !!p)
+            clearTimeout(globalTimeout)
+            if (p) {
+              setAuth(session.user, p)
+            } else {
+              await supabase.auth.signOut()
+              setLoading(false)
+            }
+          } catch (err) {
+            console.error('[useAuth] fetchPerfil falló', err)
+            clearTimeout(globalTimeout)
             setLoading(false)
           }
-        } catch {
-          clearTimeout(timeout)
-          setLoading(false)
-        }
+        }, 0)
       }
     )
 
     return () => {
-      clearTimeout(timeout)
+      clearTimeout(globalTimeout)
       subscription.unsubscribe()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
