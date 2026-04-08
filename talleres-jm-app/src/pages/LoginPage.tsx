@@ -17,7 +17,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setUser, setPerfil } = useAuthStore()
+  const { setAuth } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
 
@@ -31,14 +31,19 @@ export default function LoginPage() {
 
   const onSubmit = async ({ email, password }: LoginForm) => {
     setAuthError(null)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      // 1. Autenticar con Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setAuthError('Email o contraseña incorrectos')
+        return
+      }
+      if (!data.user) {
+        setAuthError('No se pudo obtener el usuario. Intentá de nuevo.')
+        return
+      }
 
-    if (error) {
-      setAuthError('Email o contraseña incorrectos')
-      return
-    }
-
-    if (data.user) {
+      // 2. Cargar perfil
       const { data: perfilData, error: perfilError } = await supabase
         .from('perfiles')
         .select('*')
@@ -51,10 +56,15 @@ export default function LoginPage() {
         return
       }
 
-      const tipado = perfilData as unknown as Perfil
-      setUser(data.user)
-      setPerfil(tipado)
-      navigate(tipado.rol === 'profesor' ? '/mis-horas' : '/dashboard', { replace: true })
+      const perfil = perfilData as unknown as Perfil
+
+      // 3. Setear auth de forma atómica (evita race condition con onAuthStateChange)
+      setAuth(data.user, perfil)
+
+      // 4. Navegar
+      navigate(perfil.rol === 'profesor' ? '/mis-horas' : '/dashboard', { replace: true })
+    } catch {
+      setAuthError('Error de conexión. Verificá tu internet e intentá de nuevo.')
     }
   }
 

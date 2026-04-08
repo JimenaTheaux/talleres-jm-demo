@@ -4,77 +4,66 @@ import { useAuthStore } from '@/store/authStore'
 import type { Perfil } from '@/types/app.types'
 
 async function fetchPerfil(userId: string): Promise<Perfil | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('perfiles')
     .select('*')
     .eq('id', userId)
     .single()
+  if (error) throw error   // propagate — el catch lo maneja
   return data as Perfil | null
 }
 
 export function useAuth() {
-  const { user, perfil, loading, setAuth, setLoading, clear } = useAuthStore()
+  const { loading, setAuth, setLoading, clear } = useAuthStore()
 
   useEffect(() => {
-    // Safety net: si en 7 segundos la sesión no resolvió, salimos del loading
-    // Esto cubre el caso de Supabase lento en mobile o red inestable
+    // Seguridad absoluta: si en 8s no resolvió, salimos del loading
     const timeout = setTimeout(() => {
       if (useAuthStore.getState().loading) {
+        console.warn('[useAuth] timeout — forzando loading:false')
         setLoading(false)
       }
-    }, 7000)
+    }, 8000)
 
-    // getSession() lee localStorage de forma síncrona y devuelve rápido.
-    // Manejamos la sesión inicial aquí para evitar la race condition con
-    // onAuthStateChange(INITIAL_SESSION) que dispararía un fetch duplicado.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) {
-        clearTimeout(timeout)
-        setLoading(false)
-        return
-      }
-      try {
-        const p = await fetchPerfil(session.user.id)
-        clearTimeout(timeout)
-        if (p) {
-          setAuth(session.user, p)
-        } else {
-          // Usuario autenticado pero sin perfil en la DB
-          setLoading(false)
-        }
-      } catch {
-        clearTimeout(timeout)
-        setLoading(false)
-      }
-    })
-
-    // onAuthStateChange maneja cambios POSTERIORES a la carga inicial.
-    // Saltamos INITIAL_SESSION porque ya lo manejó getSession() arriba.
+    // ⚠️  NO usamos getSession() porque puede devolver tokens vencidos
+    // del localStorage sin validarlos con el servidor.
+    // onAuthStateChange siempre valida/refresca el token ANTES de disparar.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Ignorar el evento inicial — ya lo maneja getSession()
-        if (event === 'INITIAL_SESSION') return
-
-        if (event === 'SIGNED_OUT' || !session?.user) {
+      async (_event, session) => {
+        // Sin sesión → limpiar y mostrar login
+        if (!session?.user) {
+          clearTimeout(timeout)
           clear()
           return
         }
 
-        // TOKEN_REFRESHED: el access token rotó pero el perfil no cambia.
-        // Evitamos un fetch innecesario si el perfil ya está cargado.
-        if (event === 'TOKEN_REFRESHED' && useAuthStore.getState().perfil) {
+        const currentState = useAuthStore.getState()
+
+        // Si ya tenemos al mismo usuario y perfil cargados no re-fetchar
+        // Cubre: TOKEN_REFRESHED, SIGNED_IN después de que LoginPage ya seteo el estado
+        if (
+          currentState.user?.id === session.user.id &&
+          currentState.perfil !== null
+        ) {
+          clearTimeout(timeout)
+          // Aseguramos que loading quede en false si quedó colgado
+          if (currentState.loading) setLoading(false)
           return
         }
 
-        // SIGNED_IN u otros eventos: cargar el perfil
+        // INITIAL_SESSION, SIGNED_IN con usuario nuevo → cargar perfil
         try {
           const p = await fetchPerfil(session.user.id)
+          clearTimeout(timeout)
           if (p) {
             setAuth(session.user, p)
           } else {
+            // Autenticado pero sin perfil en la DB → cerrar sesión
+            await supabase.auth.signOut()
             setLoading(false)
           }
         } catch {
+          clearTimeout(timeout)
           setLoading(false)
         }
       }
@@ -92,5 +81,5 @@ export function useAuth() {
     clear()
   }
 
-  return { user, perfil, loading, logout }
+  return { loading, logout }
 }
