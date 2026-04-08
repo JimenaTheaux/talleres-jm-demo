@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   X,
+  Timer,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
@@ -73,14 +74,18 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const esProfesor = perfil?.rol === 'profesor'
 
   const navItems = [
-    { path: '/dashboard',     label: 'Dashboard',      icon: LayoutDashboard, soloAdmin: true },
-    { path: '/alumnos',       label: 'Alumnos',         icon: Users,           soloAdmin: false },
-    { path: '/pagos',         label: 'Pagos',           icon: CreditCard,      soloAdmin: true },
-    { path: '/egresos',       label: 'Egresos',         icon: TrendingDown,    soloAdmin: true },
-    { path: '/asistencia',    label: 'Asistencia',      icon: Clock,           soloAdmin: true },
-    { path: '/ventas',        label: 'Ventas',          icon: ShoppingBag,     soloAdmin: true },
-    { path: '/configuracion', label: 'Configuración',   icon: Settings,        soloAdmin: true },
-  ].filter((item) => !esProfesor || !item.soloAdmin)
+    { path: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard, soloAdmin: true  },
+    { path: '/alumnos',       label: 'Alumnos',        icon: Users,           soloAdmin: false },
+    { path: '/pagos',         label: 'Pagos',          icon: CreditCard,      soloAdmin: true  },
+    { path: '/egresos',       label: 'Egresos',        icon: TrendingDown,    soloAdmin: true  },
+    { path: '/asistencia',    label: 'Asistencia',     icon: Clock,           soloAdmin: true  },
+    { path: '/ventas',        label: 'Ventas',         icon: ShoppingBag,     soloAdmin: true  },
+    { path: '/configuracion', label: 'Configuración',  icon: Settings,        soloAdmin: true  },
+    { path: '/mis-horas',     label: 'Mis Horas',      icon: Timer,           soloAdmin: false, soloProfesor: true },
+  ].filter((item) => {
+    if (esProfesor) return !item.soloAdmin
+    return !('soloProfesor' in item && item.soloProfesor)
+  })
 
   return (
     <div className="flex flex-col h-full w-64 bg-gradient-to-b from-primary to-secondary">
