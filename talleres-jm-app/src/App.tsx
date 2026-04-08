@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/authStore'
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import AdminLayout from '@/components/common/AdminLayout'
 import ProfesorLayout from '@/components/common/ProfesorLayout'
+import SplashScreen from '@/components/common/SplashScreen'
+import ErrorBoundary from '@/components/common/ErrorBoundary'
 
 // Lazy loading — cada página se carga solo cuando se navega a ella
 const LoginPage        = lazy(() => import('@/pages/LoginPage'))
@@ -18,14 +20,6 @@ const VentasPage       = lazy(() => import('@/pages/VentasPage'))
 const ConfiguracionPage = lazy(() => import('@/pages/ConfiguracionPage'))
 const MisHorasPage     = lazy(() => import('@/pages/MisHorasPage'))
 
-function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-surface">
-      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
-}
-
 function RootRedirect() {
   const { perfil } = useAuthStore()
   if (!perfil) return <Navigate to="/login" replace />
@@ -35,10 +29,12 @@ function RootRedirect() {
 function AppRoutes() {
   const { loading } = useAuth()
 
-  if (loading) return <PageLoader />
+  // Mientras se rehidrata la sesión de Supabase (incluye refresh de página)
+  // mostramos el splash en lugar de un spinner genérico o un flash al /login
+  if (loading) return <SplashScreen />
 
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<SplashScreen />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -72,7 +68,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }

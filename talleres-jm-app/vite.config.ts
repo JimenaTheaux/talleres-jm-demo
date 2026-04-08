@@ -10,7 +10,49 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+
+      // El SW nuevo toma control inmediatamente sin esperar que se cierren
+      // las pestañas abiertas — evita que el usuario corra una versión vieja
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+
+        // Estrategias de caché en runtime
+        runtimeCaching: [
+          // Llamadas a la API REST de Supabase: NetworkFirst
+          // Intenta la red; si falla (offline/timeout) sirve desde caché
+          {
+            urlPattern: ({ url }) =>
+              url.hostname.endsWith('.supabase.co') &&
+              url.pathname.startsWith('/rest/v1/'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-rest',
+              networkTimeoutSeconds: 8,
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 5, // 5 minutos
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Fuentes de Google: CacheFirst (casi nunca cambian)
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+
       manifest: {
         name: 'Talleres JM',
         short_name: 'Talleres JM',

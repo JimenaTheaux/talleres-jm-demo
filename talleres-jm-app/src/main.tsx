@@ -7,10 +7,13 @@ import App from './App.tsx'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,      // 5 min en caché antes de re-fetch
+      staleTime: 1000 * 60 * 2,      // 2 min — datos considerados frescos
       gcTime: 1000 * 60 * 10,        // 10 min antes de limpiar del caché
-      retry: 1,
-      refetchOnWindowFocus: false,
+      retry: 2,                       // 2 reintentos ante error de red
+      retryDelay: 1000,               // 1 segundo entre reintentos
+      refetchOnWindowFocus: false,    // no re-fetch al volver a la pestaña
+      refetchOnReconnect: true,       // re-fetch al recuperar conexión (mobile)
+      refetchOnMount: true,           // siempre re-fetch al montar el componente
     },
   },
 })
