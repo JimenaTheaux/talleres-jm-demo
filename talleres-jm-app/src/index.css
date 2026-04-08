@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  /* Marca Talleres JM */
+  --color-primary: #05173B;
+  --color-secondary: #131E47;
+  --color-accent: #3B82F6;
+  --color-accent-dark: #1D4ED8;
+
+  /* Superficies */
+  --color-surface: #F8FAFC;
+  --color-card: #FFFFFF;
+  --color-card-hover: #F1F5F9;
+
+  /* Texto */
+  --color-text-primary: #05173B;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+
+  /* Bordes */
+  --color-border: #E2E8F0;
+  --color-border-focus: #3B82F6;
+
+  /* Semánticos */
+  --color-success: #16A34A;
+  --color-success-bg: #F0FDF4;
+  --color-error: #DC2626;
+  --color-error-bg: #FEF2F2;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-info: #0284C7;
+  --color-info-bg: #F0F9FF;
+
+  /* Tipografías */
+  --font-display: 'DM Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #F8FAFC;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}

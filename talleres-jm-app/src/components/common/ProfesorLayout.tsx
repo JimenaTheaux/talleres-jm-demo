@@ -1,0 +1,57 @@
+import { Outlet } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { supabase } from '@/lib/supabase'
+
+export default function ProfesorLayout() {
+  const { perfil, clear } = useAuthStore()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    clear()
+  }
+
+  return (
+    <div className="min-h-screen bg-surface">
+      {/* Topbar */}
+      <header
+        className="fixed top-0 left-0 right-0 bg-gradient-to-r from-primary to-secondary flex items-end justify-between px-4 z-30 shadow-md"
+        style={{
+          paddingBottom: '0.75rem',
+          paddingTop: 'max(env(safe-area-inset-top), 0.75rem)',
+        }}
+      >
+        <span className="font-display font-bold text-white text-base">Talleres JM</span>
+        <div className="flex items-center gap-3">
+          {perfil && (
+            <span className="text-sm font-body text-white/80 hidden sm:block">
+              {perfil.nombre} {perfil.apellido}
+            </span>
+          )}
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="min-h-screen">
+        <div
+          className="h-14"
+          style={{ height: 'calc(3.5rem + env(safe-area-inset-top))' }}
+          aria-hidden
+        />
+        <div
+          className="p-4 lg:p-8 max-w-4xl mx-auto"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+        >
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  )
+}
