@@ -58,9 +58,9 @@ export default defineConfig({
       },
 
       manifest: {
-        name: 'Talleres JM',
-        short_name: 'Talleres JM',
-        description: 'Gestión interna Talleres JM',
+        name: 'Talleres DEMO',
+        short_name: 'Talleres DEMO',
+        description: 'Gestión interna Talleres DEMO',
         theme_color: '#05173B',
         background_color: '#F8FAFC',
         display: 'standalone',
