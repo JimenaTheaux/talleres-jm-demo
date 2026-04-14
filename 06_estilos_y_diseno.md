@@ -1,6 +1,6 @@
 # 06 — Estilos y Diseño (Design System)
 
-> Este archivo es la **fuente única de verdad visual** de Talleres JM App.
+> Este archivo es la **fuente única de verdad visual** de Talleres DEMO App.
 > Usar en cada prompt a Claude para que no invente estilos propios.
 
 ---
@@ -11,7 +11,7 @@
 - Estética **SaaS moderno modo claro** — como Apple Sports o Linear
 - **Mobile-first** — diseñar para iPhone primero, escalar a desktop
 - Jerarquía clara: KPIs → listas → acciones
-- Botones grandes, legibles, táctiles
+- Botones grandes, legibles, táctiles (min 44px)
 - Paleta de azules del Club Talleres sobre fondo blanco
 
 ---
@@ -22,7 +22,7 @@
 
 ```ts
 colors: {
-  // Marca Talleres JM
+  // Marca Talleres
   primary:      '#05173B',   // Prussian Blue — color principal, sidebar, títulos
   secondary:    '#131E47',   // Space Indigo — variante oscura
   accent:       '#3B82F6',   // Azul eléctrico — CTAs, links, highlights
@@ -164,7 +164,6 @@ className="text-4xl font-display font-black text-white mt-1"
 
 ### Badge de estado pago
 ```tsx
-// Aplicar colores inline según la tabla de estados
 <span
   style={{ background: estadoColors[estado].bg, color: estadoColors[estado].text }}
   className="text-[11px] font-body font-semibold px-2.5 py-0.5 rounded-full"
@@ -252,13 +251,24 @@ className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-auto"
 ├─────────────────────────┤
 │                         │
 │    Main Content p-4     │
+│    pb-safe (iOS)        │
 │                         │
-├─────────────────────────┤
-│  Bottom Nav (opcional)  │
 └─────────────────────────┘
 ```
 
-### Sidebar (desktop)
+### iOS Safe Area
+```tsx
+// En el contenido principal — respetar home bar y notch
+className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+
+// En el topbar fijo
+style={{ paddingTop: 'env(safe-area-inset-top)' }}
+
+// En el viewport (index.html)
+// <meta name="viewport" content="..., viewport-fit=cover">
+```
+
+### Sidebar (desktop — AdminLayout)
 ```tsx
 className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-primary to-secondary flex flex-col z-40"
 // Logo area
@@ -271,9 +281,30 @@ className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl bg-white/15 text-wh
 className="p-4 border-t border-white/10 mt-auto"
 ```
 
-### Topbar (mobile)
+### Topbar (mobile — AdminLayout)
 ```tsx
 className="fixed top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-sm border-b border-border flex items-center justify-between px-4 z-40"
+```
+
+### ProfesorLayout topbar
+```tsx
+// Topbar completa
+className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-primary to-secondary"
+style={{ paddingTop: 'env(safe-area-inset-top)' }}
+// Contenido interior
+className="flex items-center justify-between px-4 h-14"
+// Links de nav (Alumnos, Mis Horas)
+// NavLink activo: text-white font-semibold / inactivo: text-white/70
+// Botones de acción: Lock (CambiarContraseña) + LogOut
+```
+
+### SplashScreen
+```tsx
+// Pantalla completa de carga — cubre toda la app
+className="fixed inset-0 bg-gradient-to-b from-primary to-secondary flex flex-col items-center justify-center z-50"
+// Logo + spinner giratorio
+// Fase 'slow' (3s): "Conectando con el servidor…" en blanco
+// Fase 'retry' (7s): botón "Reintentar" → window.location.reload()
 ```
 
 ### Grillas de KPIs
@@ -296,6 +327,10 @@ className="grid grid-cols-2 lg:grid-cols-4 gap-4"
 | Layout profesor | `ProfesorLayout` |
 | Selector de período | `PeriodoPicker` |
 | Botón WhatsApp | `WhatsAppButton` |
+| Pantalla de carga | `SplashScreen` |
+| Límite de error | `ErrorBoundary` |
+| Thumbnail producto | `ProductoThumb` |
+| Modal contraseña | `CambiarContrasenaModal` |
 
 **Regla:** si un elemento se repite 2 veces → crear componente reutilizable.
 
@@ -311,6 +346,7 @@ className="grid grid-cols-2 lg:grid-cols-4 gap-4"
 - No usar valores arbitrarios de Tailwind salvo `text-[11px]` definido aquí
 - No poner sombras excesivas — `shadow-sm` es el estándar
 - No usar modales para acciones simples — preferir inline o página nueva
+- No ignorar el safe area de iOS — siempre aplicar `env(safe-area-inset-*)`
 
 ---
 
@@ -320,17 +356,26 @@ Usar exclusivamente **lucide-react**.
 Tamaños estándar: `size={16}` (inline), `size={20}` (botones), `size={24}` (nav).
 
 ```tsx
-import { Users, CreditCard, TrendingDown, ShoppingBag, Clock, Settings, LayoutDashboard, MessageCircle } from 'lucide-react'
+import {
+  Users, CreditCard, TrendingDown, ShoppingBag, Clock, Settings,
+  LayoutDashboard, MessageCircle, Lock, Eye, EyeOff,
+  Timer, LogOut, CheckCircle2, AlertCircle
+} from 'lucide-react'
 
 // Iconos por sección
-Dashboard    → LayoutDashboard
-Alumnos      → Users
-Pagos        → CreditCard
-Egresos      → TrendingDown
-Ventas       → ShoppingBag
-Asistencia   → Clock
+Dashboard     → LayoutDashboard
+Alumnos       → Users
+Pagos         → CreditCard
+Egresos       → TrendingDown
+Ventas        → ShoppingBag
+Asistencia    → Clock
 Configuración → Settings
-WhatsApp     → MessageCircle
+WhatsApp      → MessageCircle
+Mis Horas     → Timer
+Contraseña    → Lock
+Logout        → LogOut
+Éxito         → CheckCircle2
+Error         → AlertCircle
 ```
 
 ---
@@ -349,3 +394,4 @@ Al generar cualquier componente de UI:
 8. Confirmar antes de cualquier acción destructiva
 9. Todo número de dinero: usar `formatCurrency()` de utils.ts
 10. Todo período: usar `formatPeriodo()` de utils.ts
+11. iOS safe area: siempre `env(safe-area-inset-*)` en layouts fijos

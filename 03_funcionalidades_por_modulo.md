@@ -9,17 +9,30 @@
 - Sin registro público
 - Sesión persistente (no expira sola)
 - Redirección automática según rol:
-  - Admin → Dashboard
-  - Profesor → Vista de mis horas
-- Manejo de errores: credenciales incorrectas, usuario inactivo
+  - Admin → `/dashboard`
+  - Profesor → `/mis-horas`
+- Manejo de errores: credenciales incorrectas, usuario inactivo, error de red
+- Estado "Ingresando..." bloqueado mientras procesa (isSubmitting)
 
 ### F1.2 — Logout
-- Botón siempre visible en el layout
-- Limpia la sesión local
+- Botón siempre visible en el layout (sidebar admin / topbar profesor)
+- Limpia la sesión local y el store Zustand
+
+### F1.3 — Cambiar contraseña
+- Modal `CambiarContrasenaModal` accesible desde:
+  - **Admin:** sección "Mi cuenta" en ConfiguracionPage (botón con ícono Lock)
+  - **Profesor:** topbar de ProfesorLayout (botón con ícono Lock)
+- Campos: contraseña actual (validación en UI), nueva contraseña (mín. 6 caracteres), confirmar nueva
+- Toggle Eye/EyeOff por campo
+- Llama a `supabase.auth.updateUser({ password })`
+- Estado de éxito con ícono CheckCircle2 + cierre automático a los 1800ms
+- Validación con Zod + React Hook Form
 
 ---
 
 ## MÓDULO 2: Alumnos
+
+> Accesible por admin **y profesor** (misma vista, mismas acciones).
 
 ### F2.1 — Listado de alumnos
 - Tabla con: nombre completo, turno, teléfono tutor, estado (activo/inactivo)
@@ -157,13 +170,14 @@
 - Selector de mes
 - Lista de registros del mes con total de horas
 - Sin opciones de editar ni agregar
+- Navegación desde `ProfesorLayout`: topbar con link "Alumnos" + botón lock + logout
 
 ---
 
 ## MÓDULO 6: Ventas de Productos
 
 ### F6.1 — Listado de ventas
-- Tabla con: producto, detalle, talle, alumno (si aplica), precio venta, cantidad, total, estado, fecha
+- Tabla con: thumbnail del producto (`ProductoThumb`), producto, detalle, talle, alumno (si aplica), precio venta, cantidad, total, estado, fecha
 - Filtro por estado: pagado / deuda / todos
 - Filtro por período
 - Búsqueda por producto o alumno
@@ -173,7 +187,7 @@
 
 ### F6.2 — Registrar venta
 **Campos:**
-- Producto (selección del catálogo activo)
+- Producto (selección del catálogo activo) — muestra thumbnail
   - Al seleccionar, se precarga precio actual del catálogo (editable)
 - Alumno (selección de lista — opcional)
 - Talle (texto libre, opcional)
@@ -188,9 +202,14 @@
 - Mismos campos que registrar
 
 ### F6.4 — Catálogo de productos (desde Configuración)
-- Lista de productos con: nombre, detalle, precio actual, foto, activo/inactivo
+- Lista de productos con: nombre, detalle, precio actual, foto (thumbnail con fallback a ícono), activo/inactivo
 - Crear, editar, activar/desactivar producto
 - Campos producto: nombre, detalle, precio_actual, foto_url (opcional), activo
+
+### F6.5 — Thumbnail de producto (`ProductoThumb`)
+- Componente reutilizable que muestra la foto del producto
+- `onError` → fallback al ícono `ShoppingBag` de Lucide
+- Usado en: VentasPage listado, VentaForm selector, ProductosSection en Configuración
 
 ---
 
@@ -243,7 +262,11 @@ Todos los valores respetan el filtro de período activo (default: mes actual).
 - Campos: nombre, días, horario, categoría
 
 ### F8.4 — Categorías de egresos
-> Las categorías son un ENUM fijo en la base de datos: `sueldos | alquiler | equipamiento | otros`. No son editables por el usuario. Se muestran como referencia en esta sección.
+> Las categorías son un ENUM fijo en la base de datos: `sueldos | alquiler | equipamiento | otros`. No son editables por el usuario.
+
+### F8.5 — Mi cuenta (solo visible para admin)
+- Sección fija al pie de ConfiguracionPage (visible en todos los tabs)
+- Botón con ícono Lock → abre `CambiarContrasenaModal`
 
 ---
 
@@ -252,3 +275,5 @@ Todos los valores respetan el filtro de período activo (default: mes actual).
 - Todo formulario muestra validación inline antes de enviar
 - Todo estado de carga (loading) y error (con mensaje claro en español) es obligatorio
 - Los importes siempre se muestran con separador de miles y 2 decimales (ej: $12.500,00)
+- SplashScreen en carga inicial: fase loading (0s) → "Conectando con el servidor" (3s) → botón reintento (7s) → timeout (10s)
+- Errores de chunk load tras redeploy: auto-reload via ErrorBoundary + `unhandledrejection` handler

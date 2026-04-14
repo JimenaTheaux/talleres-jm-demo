@@ -1,7 +1,8 @@
 # 01 — Contexto y Visión del Proyecto
 
 ## Nombre del proyecto
-> **Talleres JM — Sistema de Gestión Interna**
+> **Talleres DEMO — Sistema de Gestión Interna**
+> *(nombre interno de desarrollo: talleres-jm-demo)*
 
 ## Descripción general
 Sistema interno de gestión para la Escuela de Fútbol Talleres Jesús María. PWA centralizada que permite administrar alumnos, pagos, egresos, ventas de productos y asistencia de profesores, reemplazando el flujo manual actual (cuadernos, WhatsApp, planillas).
@@ -16,9 +17,9 @@ Sistema interno de gestión para la Escuela de Fútbol Talleres Jesús María. P
 ## Objetivo del MVP
 Digitalizar la gestión completa de la escuelita: alumnos, pagos mensuales, egresos, ventas de productos y horas de profesores, con dashboard financiero con filtros por período.
 
-## Alcance del MVP
+## Alcance del MVP — Estado actual
 
-### ✅ Incluye
+### ✅ Implementado
 - ABM de alumnos con turno asignado
 - Registro de pagos mensuales (individuales y grupales por familia)
 - Generación automática de deudas para alumnos activos sin pago del mes
@@ -28,17 +29,22 @@ Digitalizar la gestión completa de la escuelita: alumnos, pagos mensuales, egre
 - Ventas de productos del club con estado pagado/deuda
 - WhatsApp deeplink para contactar deudores
 - ABM de productos, turnos y categorías desde Configuración
-- Autenticación con roles: admin y profesor
-- Vista de profesor: solo su propia asistencia/horas
+- Autenticación con roles: admin, superadmin y profesor
+- Vista de profesor: sus propias horas + acceso completo a Alumnos (ver y editar)
 - PWA instalable en iOS, Android y Desktop
+- Deploy en Vercel con actualización automática
+- Cambiar contraseña (modal accesible desde Configuración para admin, desde topbar para profesor)
+- Thumbnails de foto de producto en listado y formularios de ventas
+- SplashScreen progresivo con feedback visual y botón de reintento
+- Manejo automático de errores de chunk load tras redeploy
 
 ### ❌ Fuera del MVP
 - Control de stock de productos
 - Facturación electrónica / AFIP
 - Notificaciones push
-- Vista avanzada de profesores (más allá de sus horas)
 - Vinculación egresos ↔ sueldos de profes (calculado automático)
-- Foto de alumno
+- Foto de alumno en perfil
+- Multi-tenant / SaaS
 
 ## Usuarios del sistema
 
@@ -46,7 +52,7 @@ Digitalizar la gestión completa de la escuelita: alumnos, pagos mensuales, egre
 |---|---|---|
 | Admin (dueño) | iPhone | Gestión completa del sistema |
 | Admin (co-admin) | Android | Gestión completa del sistema |
-| Profesor | Android / cualquier | Solo ve su propia asistencia y horas |
+| Profesor | Android / cualquier | Sus horas + vista de alumnos |
 
 ## Identidad visual
 
@@ -65,6 +71,13 @@ Modo claro. Fondo blanco. Cards con sombra suave. Acentos en azul Talleres.
 Referencia: limpio y moderno como Apple Sports / Withings Health — datos primero, sin decoración innecesaria.
 Mobile-first pero completamente funcional en desktop.
 
+## Deploy
+
+- **Plataforma:** Vercel
+- **Repositorio:** `https://github.com/JimenaTheaux/talleres-jm-demo`
+- **Branch principal:** `main` (auto-deploy en cada push)
+- **Variables de entorno en Vercel:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
 ## Potencial SaaS futuro
 El sistema está diseñado para ser multi-tenant a futuro:
 - `configuracion` centraliza nombre, logo y datos del negocio
@@ -75,7 +88,7 @@ El sistema está diseñado para ser multi-tenant a futuro:
 ## Visión a futuro (backlog)
 - Foto de alumno en perfil
 - RLS y políticas de seguridad por rol (Supabase)
-- Vista avanzada de profesores
+- Vista avanzada de profesores (historial, métricas)
 - Vinculación egresos ↔ sueldos de profes
 - Notificaciones push (deudas, recordatorios)
 - Multi-tenant / SaaS para otras escuelitas
